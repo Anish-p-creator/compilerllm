@@ -1,0 +1,13 @@
+{
+  "model": {"preset": "llama-7b"},
+  "hardware": {"device": "NVIDIA A100", "gpu_memory": "80GB", "memory_bandwidth": "1935 GB/s"},
+  "workload": {
+    "batch_size": 32,
+    "prompt_length": 2048,
+    "generation_length": 512,
+    "max_context": 4096,
+    "mode": "decode",
+    "precision": "FP16",
+    "prompt_spec": {"system_prompt_tokens": 1024, "fewshot_groups": 2, "fewshot_tokens": 256}
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "model": {"preset": "llama-3-8b"},
+  "hardware": {"device": "RTX 4090"},
+  "workload": {
+    "batch_size": 16,
+    "prompt_length": 2048,
+    "generation_length": 512,
+    "max_context": 8192,
+    "mode": "mixed",
+    "precision": "FP16",
+    "prompt_spec": {"system_prompt_tokens": 512}
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "model": {"preset": "mistral-7b"},
+  "hardware": {"device": "NVIDIA H100"},
+  "workload": {
+    "batch_size": 8,
+    "prompt_length": 1024,
+    "generation_length": 256,
+    "max_context": 2048,
+    "mode": "decode",
+    "precision": "FP16",
+    "prompts": [
+      "You are an AI assistant for VIT (Vellore Institute of Technology). Answer politely and cite the handbook. Question: What is the attendance rule?",
+      "You are an AI assistant for VIT (Vellore Institute of Technology). Answer politely and cite the handbook. Question: How do I apply for a hostel room?",
+      "You are an AI assistant for VIT (Vellore Institute of Technology). Answer politely and cite the handbook. Question: When are the CAT exams held?",
+      "You are an AI assistant for VIT (Vellore Institute of Technology). Answer politely and cite the handbook. Question: How is the GPA calculated?",
+      "Summarise the following article in three bullet points: the monsoon arrived early this year.",
+      "You are an AI assistant for VIT (Vellore Institute of Technology). Answer politely and cite the handbook. Question: Who is my faculty advisor?"
+    ]
+  },
+  "options": {"chunk_size": 4}
+}

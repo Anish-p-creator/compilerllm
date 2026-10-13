@@ -1,0 +1,391 @@
+{
+  "model": {
+    "name": "llama-7b",
+    "layers": 32,
+    "hidden": 4096,
+    "heads": 32,
+    "kv_heads": 32,
+    "head_dim": 128,
+    "params_b": 6.74,
+    "precision": "fp16"
+  },
+  "hardware": {
+    "name": "NVIDIA A100-80GB",
+    "memory_gib": 80.0,
+    "bandwidth_gbps": 1935.0,
+    "fp16_tflops": 312
+  },
+  "workload": {
+    "batch_size": 32,
+    "prompt_length": 2048,
+    "generation_length": 512,
+    "max_context": 4096,
+    "mode": "decode",
+    "prompt_spec": {
+      "system_prompt_tokens": 1024,
+      "fewshot_groups": 2,
+      "fewshot_tokens": 256
+    },
+    "seed": 0
+  },
+  "options": {
+    "pressure_threshold": 0.6,
+    "block_size": 16,
+    "chunk_size": 16,
+    "paged_overhead_pct": 3.0,
+    "int8_dequant_overhead_pct": 2.0,
+    "decode_fraction": 0.7,
+    "usable_memory_fraction": 0.92,
+    "mem_bw_efficiency": 0.75,
+    "prefill_mfu": 0.5,
+    "objective": {}
+  },
+  "passes": [
+    {
+      "pass_name": "kv_cache",
+      "info": {
+        "kv_bytes_per_token": 524288,
+        "reserved_kv_gib": 64.0,
+        "memory_pressure": 0.8,
+        "pressure_threshold": 0.6,
+        "high_pressure": true
+      },
+      "candidates": [
+        {
+          "name": "paged_kv",
+          "pass_name": "kv_cache",
+          "description": "paged KV cache, 16-token blocks",
+          "memory_saved_bytes": 25769803776,
+          "latency_delta_pct": 3.0,
+          "accuracy_risk": "none",
+          "prefill_compute_saved_flops": 0.0,
+          "rationale": "contiguous allocation reserves 4096 tokens/request but only 2560 are ever used (62% utilization)",
+          "details": {
+            "block_size": 16,
+            "reserved_gib": 64.0,
+            "paged_gib": 40.0,
+            "utilization": 0.625,
+            "saved_gib": 24.0
+          }
+        },
+        {
+          "name": "int8_kv",
+          "pass_name": "kv_cache",
+          "description": "INT8 KV cache (per-token symmetric, fp16 scales)",
+          "memory_saved_bytes": 33822867456.0,
+          "latency_delta_pct": -48.203125,
+          "accuracy_risk": "low",
+          "prefill_compute_saved_flops": 0.0,
+          "rationale": "decode attention is memory-bound (1.0 FLOP/B << ridge 161 FLOP/B), so reading half the bytes cuts attention time",
+          "details": {
+            "bytes_per_element": 1.015625,
+            "size_ratio": 0.5078125,
+            "kv_gib_baseline": 64.0,
+            "kv_gib_int8": 32.5,
+            "saved_gib": 31.5,
+            "saved_gib_if_paged_too": 19.6875,
+            "memory_bound": true,
+            "accuracy": {
+              "rel_error": 0.006434745326463175,
+              "worst_rel_error": 0.017426183915793918,
+              "max_abs_error": 0.052684634061786806,
+              "mean_cosine": 0.9999802197151962,
+              "seq_len": 1024,
+              "data": "synthetic heads"
+            }
+          }
+        }
+      ],
+      "rejections": []
+    },
+    {
+      "pass_name": "prefix_share",
+      "info": {
+        "prompt_source": "synthetic prompt_spec",
+        "num_prompts": 32,
+        "total_tokens": 65536,
+        "stored_tokens": 26112,
+        "longest_shared_prefix": 1280,
+        "longest_shared_prefix_prompts": 16,
+        "common_prefix_all": 1024
+      },
+      "candidates": [
+        {
+          "name": "prefix_share",
+          "pass_name": "prefix_share",
+          "description": "shared-prefix KV cache (16-token chunks, radix trie)",
+          "memory_saved_bytes": 20669530112.0,
+          "latency_delta_pct": 0.0,
+          "accuracy_risk": "none",
+          "prefill_compute_saved_flops": 544605634560000.0,
+          "rationale": "longest shared prefix = 1280 tokens (shared by 16 of 32 prompts); 60.2% of prompt tokens never need recomputing or re-storing",
+          "details": {
+            "prompt_source": "synthetic prompt_spec",
+            "extrapolated": false,
+            "num_prompts": 32,
+            "total_prompt_tokens": 65536,
+            "trie_stored_tokens": 26112,
+            "exact_shareable_tokens": 39424,
+            "reuse_tokens_chunk_aligned": 39424,
+            "chunk_size": 16,
+            "longest_shared_prefix": 1280,
+            "longest_shared_prefix_prompts": 16,
+            "longest_shared_prefix_preview": "1 2 3 4 5 6 7 8 ...",
+            "common_prefix_all": 1024,
+            "top_segments": [
+              {
+                "start": 0,
+                "length": 1024,
+                "count": 32,
+                "head": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8
+                ]
+              },
+              {
+                "start": 1024,
+                "length": 256,
+                "count": 16,
+                "head": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8
+                ]
+              },
+              {
+                "start": 1024,
+                "length": 256,
+                "count": 16,
+                "head": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8
+                ]
+              }
+            ],
+            "token_reuse_ratio": 0.6015625,
+            "flops_saved_fraction": 0.5928475150232604,
+            "prefill_tokens_saved": 39424.0,
+            "memory_saved_gib": 19.25,
+            "compute_saved_tflop": 544.60563456
+          }
+        }
+      ],
+      "rejections": []
+    }
+  ],
+  "plan": {
+    "selected": [
+      "int8_kv",
+      "paged_kv",
+      "prefix_share"
+    ],
+    "weights": {
+      "latency": 1.0,
+      "memory": 1.0,
+      "ttft": 0.25
+    },
+    "notes": [
+      "baseline does NOT fit in usable GPU memory; only fitting plans were considered"
+    ],
+    "baseline": {
+      "kv_gib": 64.0,
+      "weights_gib": 12.55422830581665,
+      "total_gib": 76.55422830581665,
+      "fits": false,
+      "max_batch": 30,
+      "ttft_ms": 5888.63353819241,
+      "tpot_ms": 35.9240004575366,
+      "throughput_tok_s": 890.7693907259882,
+      "kv_read_gib_per_step": 36.0,
+      "hbm_traffic_gib_per_step": 48.55422830581665,
+      "prefill_tokens": 65536
+    },
+    "optimized": {
+      "kv_gib": 10.537109375,
+      "weights_gib": 12.55422830581665,
+      "total_gib": 23.09133768081665,
+      "fits": true,
+      "max_batch": 185,
+      "ttft_ms": 2397.57177819241,
+      "tpot_ms": 23.498768276749008,
+      "throughput_tok_s": 1361.7735033228353,
+      "kv_read_gib_per_step": 18.28125,
+      "hbm_traffic_gib_per_step": 30.83547830581665,
+      "prefill_tokens": 26112
+    },
+    "trials": [
+      {
+        "names": [
+          "int8_kv",
+          "paged_kv",
+          "prefix_share"
+        ],
+        "cost": 1.0575463389020137,
+        "metrics": {
+          "kv_gib": 10.537109375,
+          "weights_gib": 12.55422830581665,
+          "total_gib": 23.09133768081665,
+          "fits": true,
+          "max_batch": 185,
+          "ttft_ms": 2397.57177819241,
+          "tpot_ms": 23.498768276749008,
+          "throughput_tok_s": 1361.7735033228353,
+          "kv_read_gib_per_step": 18.28125,
+          "hbm_traffic_gib_per_step": 30.83547830581665,
+          "prefill_tokens": 26112
+        }
+      },
+      {
+        "names": [
+          "int8_kv",
+          "prefix_share"
+        ],
+        "cost": 1.2052259447406053,
+        "metrics": {
+          "kv_gib": 22.724609375,
+          "weights_gib": 12.55422830581665,
+          "total_gib": 35.27883768081665,
+          "fits": true,
+          "max_batch": 85,
+          "ttft_ms": 2397.57177819241,
+          "tpot_ms": 23.084878259707146,
+          "throughput_tok_s": 1386.1888133000684,
+          "kv_read_gib_per_step": 18.28125,
+          "hbm_traffic_gib_per_step": 30.83547830581665,
+          "prefill_tokens": 26112
+        }
+      },
+      {
+        "names": [
+          "int8_kv",
+          "paged_kv"
+        ],
+        "cost": 1.3334505847724127,
+        "metrics": {
+          "kv_gib": 20.3125,
+          "weights_gib": 12.55422830581665,
+          "total_gib": 32.86672830581665,
+          "fits": true,
+          "max_batch": 96,
+          "ttft_ms": 5888.63353819241,
+          "tpot_ms": 23.498768276749008,
+          "throughput_tok_s": 1361.7735033228353,
+          "kv_read_gib_per_step": 18.28125,
+          "hbm_traffic_gib_per_step": 30.83547830581665,
+          "prefill_tokens": 65536
+        }
+      },
+      {
+        "names": [
+          "int8_kv"
+        ],
+        "cost": 1.4811301906110041,
+        "metrics": {
+          "kv_gib": 32.5,
+          "weights_gib": 12.55422830581665,
+          "total_gib": 45.05422830581665,
+          "fits": true,
+          "max_batch": 60,
+          "ttft_ms": 5888.63353819241,
+          "tpot_ms": 23.084878259707146,
+          "throughput_tok_s": 1386.1888133000684,
+          "kv_read_gib_per_step": 18.28125,
+          "hbm_traffic_gib_per_step": 30.83547830581665,
+          "prefill_tokens": 65536
+        }
+      },
+      {
+        "names": [
+          "paged_kv",
+          "prefix_share"
+        ],
+        "cost": 1.5590722957022365,
+        "metrics": {
+          "kv_gib": 20.75,
+          "weights_gib": 12.55422830581665,
+          "total_gib": 33.30422830581665,
+          "fits": true,
+          "max_batch": 94,
+          "ttft_ms": 2397.57177819241,
+          "tpot_ms": 36.72306414051335,
+          "throughput_tok_s": 871.3869811505515,
+          "kv_read_gib_per_step": 36.0,
+          "hbm_traffic_gib_per_step": 48.55422830581665,
+          "prefill_tokens": 26112
+        }
+      },
+      {
+        "names": [
+          "prefix_share"
+        ],
+        "cost": 1.8503323829262355,
+        "metrics": {
+          "kv_gib": 44.75,
+          "weights_gib": 12.55422830581665,
+          "total_gib": 57.30422830581665,
+          "fits": true,
+          "max_batch": 43,
+          "ttft_ms": 2397.57177819241,
+          "tpot_ms": 35.9240004575366,
+          "throughput_tok_s": 890.7693907259882,
+          "kv_read_gib_per_step": 36.0,
+          "hbm_traffic_gib_per_step": 48.55422830581665,
+          "prefill_tokens": 26112
+        }
+      },
+      {
+        "names": [
+          "paged_kv"
+        ],
+        "cost": 1.958739912776001,
+        "metrics": {
+          "kv_gib": 40.0,
+          "weights_gib": 12.55422830581665,
+          "total_gib": 52.55422830581665,
+          "fits": true,
+          "max_batch": 48,
+          "ttft_ms": 5888.63353819241,
+          "tpot_ms": 36.72306414051335,
+          "throughput_tok_s": 871.3869811505515,
+          "kv_read_gib_per_step": 36.0,
+          "hbm_traffic_gib_per_step": 48.55422830581665,
+          "prefill_tokens": 65536
+        }
+      },
+      {
+        "names": [],
+        "cost": 2.25,
+        "metrics": {
+          "kv_gib": 64.0,
+          "weights_gib": 12.55422830581665,
+          "total_gib": 76.55422830581665,
+          "fits": false,
+          "max_batch": 30,
+          "ttft_ms": 5888.63353819241,
+          "tpot_ms": 35.9240004575366,
+          "throughput_tok_s": 890.7693907259882,
+          "kv_read_gib_per_step": 36.0,
+          "hbm_traffic_gib_per_step": 48.55422830581665,
+          "prefill_tokens": 65536
+        }
+      }
+    ]
+  }
+}
