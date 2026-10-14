@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LLMOpt — Compiler Optimization Pipeline for LLM Inference. Analyze, optimize, and visualize GPU-targeted optimizations for large language models.">
+    <title>LLMOpt — Compiler Optimization for LLMs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background effects -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow glow-1"></div>
+    <div class="bg-glow glow-2"></div>
+    <div class="bg-glow glow-3"></div>
+
+    <!-- Header -->
+    <header id="header">
+        <div class="header-inner">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 32 32" fill="none"><path d="M4 16L16 4L28 16L16 28L4 16Z" stroke="url(#logo-grad)" stroke-width="2.5" fill="none"/><path d="M10 16L16 10L22 16L16 22L10 16Z" fill="url(#logo-grad)"/><defs><linearGradient id="logo-grad" x1="4" y1="4" x2="28" y2="28"><stop stop-color="#818cf8"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs></svg>
+                </div>
+                <span class="logo-text">LLMOpt</span>
+                <span class="logo-tag">Compiler Optimization Pipeline</span>
+            </div>
+            <nav class="header-nav">
+                <a href="#configure" class="nav-link active" data-section="configure">Configure</a>
+                <a href="#results" class="nav-link" data-section="results">Results</a>
+                <a href="#realworld" class="nav-link" data-section="realworld">Real-World</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="app">
+        <!-- Section 1: Configuration -->
+        <section id="configure" class="section active">
+            <div class="section-header">
+                <h1>Configure Optimization Pipeline</h1>
+                <p class="section-subtitle">Select your model, hardware, and workload to run the full 3-phase compiler optimization pipeline.</p>
+            </div>
+
+            <div class="config-grid">
+                <!-- Model Card -->
+                <div class="config-card" id="model-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                        </div>
+                        <h2>Model</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="select-group">
+                            <label for="model-select">Architecture</label>
+                            <select id="model-select">
+                                <option value="llama-7b" selected>LLaMA-7B (6.74B params, MHA)</option>
+                                <option value="mistral-7b">Mistral-7B (7.24B params, GQA)</option>
+                            </select>
+                        </div>
+                        <div class="model-info" id="model-info">
+                            <div class="info-chip"><span class="chip-label">Layers</span><span class="chip-value" id="chip-layers">32</span></div>
+                            <div class="info-chip"><span class="chip-label">KV Heads</span><span class="chip-value" id="chip-kv-heads">32</span></div>
+                            <div class="info-chip"><span class="chip-label">Head Dim</span><span class="chip-value" id="chip-head-dim">128</span></div>
+                            <div class="info-chip"><span class="chip-label">GQA</span><span class="chip-value" id="chip-gqa">No</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hardware Card -->
+                <div class="config-card" id="hardware-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>
+                        </div>
+                        <h2>Hardware</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="select-group">
+                            <label for="hardware-select">GPU</label>
+                            <select id="hardware-select">
+                                <option value="a100" selected>NVIDIA A100 80GB SXM</option>
+                                <option value="h100">NVIDIA H100 80GB SXM5</option>
+                                <option value="t4">NVIDIA T4</option>
+                                <option value="rtx4090">NVIDIA GeForce RTX 4090</option>
+                            </select>
+                        </div>
+                        <div class="model-info" id="hw-info">
+                            <div class="info-chip"><span class="chip-label">Memory</span><span class="chip-value" id="chip-mem">80 GB</span></div>
+                            <div class="info-chip"><span class="chip-label">Bandwidth</span><span class="chip-value" id="chip-bw">2039 GB/s</span></div>
+                            <div class="info-chip"><span class="chip-label">FP16</span><span class="chip-value" id="chip-tflops">312 TFLOP/s</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workload Card -->
+                <div class="config-card wide" id="workload-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+                        </div>
+                        <h2>Workload</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-grid">
+                            <div class="input-group">
+                                <label for="mode-select">Mode</label>
+                                <select id="mode-select">
+                                    <option value="decode" selected>Decode (autoregressive)</option>
+                                    <option value="prefill">Prefill (prompt processing)</option>
+                                    <option value="mixed">Mixed (prefill + decode)</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="precision-select">Precision</label>
+                                <select id="precision-select">
+                                    <option value="fp16" selected>FP16</option>
+                                    <option value="bf16">BF16</option>
+                                    <option value="fp32">FP32</option>
+                                    <option value="int8">INT8</option>
+                                    <option value="int4">INT4</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="batch-input">Batch Size</label>
+                                <input type="number" id="batch-input" value="1" min="1" max="1024">
+                            </div>
+                            <div class="input-group">
+                                <label for="seq-input">Prompt Length</label>
+                                <input type="number" id="seq-input" value="2048" min="1" max="131072" step="256">
+                            </div>
+                            <div class="input-group">
+                                <label for="gen-input">Generation Length</label>
+                                <input type="number" id="gen-input" value="256" min="0" max="131072" step="64">
+                            </div>
+                            <div class="input-group">
+                                <label for="ctx-input">Max Context <span class="label-hint">(0 = auto)</span></label>
+                                <input type="number" id="ctx-input" value="0" min="0" max="131072" step="256">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prefix Sharing Config (Collapsible) -->
+                <div class="config-card wide" id="prefix-card">
+                    <div class="card-header clickable" onclick="toggleAdvanced()">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                        </div>
+                        <h2>Advanced Options</h2>
+                        <svg class="chevron" id="adv-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="card-body advanced-body" id="advanced-body">
+                        <div class="input-grid">
+                            <div class="input-group">
+                                <label for="sys-tokens">System Prompt Tokens</label>
+                                <input type="number" id="sys-tokens" value="0" min="0">
+                            </div>
+                            <div class="input-group">
+                                <label for="fewshot-groups">Few-shot Groups</label>
+                                <input type="number" id="fewshot-groups" value="0" min="0">
+                            </div>
+                            <div class="input-group">
+                                <label for="fewshot-tokens">Few-shot Tokens</label>
+                                <input type="number" id="fewshot-tokens" value="0" min="0">
+                            </div>
+                            <div class="input-group">
+                                <label for="pressure-thresh">KV Pressure Threshold</label>
+                                <input type="number" id="pressure-thresh" value="0.60" min="0" max="1" step="0.05">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="run-section">
+                <button id="run-btn" class="run-button" onclick="runOptimization()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <span>Run Optimization Pipeline</span>
+                </button>
+                <div class="run-status" id="run-status"></div>
+            </div>
+        </section>
+
+        <!-- Section 2: Results -->
+        <section id="results" class="section">
+            <div class="section-header">
+                <h1>Optimization Results</h1>
+                <p class="section-subtitle" id="results-subtitle">Run the pipeline to see results.</p>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading-container" id="loading-container" style="display:none;">
+                <div class="loading-spinner">
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring delay-1"></div>
+                    <div class="spinner-ring delay-2"></div>
+                </div>
+                <p class="loading-text">Running 3-phase optimization pipeline...</p>
+                <div class="loading-phases">
+                    <div class="phase-step" id="phase-1-step"><span class="phase-dot"></span> Phase 1: IR Construction + Roofline Analysis</div>
+                    <div class="phase-step" id="phase-2-step"><span class="phase-dot"></span> Phase 2: KV-Cache + Prefix Sharing Passes</div>
+                    <div class="phase-step" id="phase-3-step"><span class="phase-dot"></span> Phase 3: Fusion + Scheduling + Auto-Tuner</div>
+                </div>
+            </div>
+
+            <!-- Results Content -->
+            <div id="results-content" style="display:none;">
+
+                <!-- Summary Cards -->
+                <div class="summary-grid" id="summary-grid">
+                    <div class="summary-card glow-border">
+                        <div class="summary-icon mem-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 6V4M10 6V4M14 6V4M18 6V4M6 18v2M10 18v2M14 18v2M18 18v2"/></svg>
+                        </div>
+                        <div class="summary-data">
+                            <span class="summary-label">Memory Footprint</span>
+                            <span class="summary-value" id="sum-memory">—</span>
+                            <span class="summary-sub" id="sum-memory-detail">—</span>
+                        </div>
+                    </div>
+                    <div class="summary-card glow-border">
+                        <div class="summary-icon lat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <div class="summary-data">
+                            <span class="summary-label">Baseline Latency</span>
+                            <span class="summary-value" id="sum-latency">—</span>
+                            <span class="summary-sub" id="sum-latency-detail">—</span>
+                        </div>
+                    </div>
+                    <div class="summary-card glow-border">
+                        <div class="summary-icon opt-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        </div>
+                        <div class="summary-data">
+                            <span class="summary-label">Optimizations Selected</span>
+                            <span class="summary-value" id="sum-opts">—</span>
+                            <span class="summary-sub" id="sum-opts-detail">—</span>
+                        </div>
+                    </div>
+                    <div class="summary-card glow-border">
+                        <div class="summary-icon fit-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <div class="summary-data">
+                            <span class="summary-label">GPU Memory Fit</span>
+                            <span class="summary-value" id="sum-fit">—</span>
+                            <span class="summary-sub" id="sum-fit-detail">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 1: IR Breakdown -->
+                <div class="result-panel" id="panel-p1">
+                    <div class="panel-header" onclick="togglePanel('p1')">
+                        <div class="panel-title">
+                            <span class="phase-badge p1">P1</span>
+                            <h2>IR Construction & Roofline Analysis</h2>
+                        </div>
+                        <svg class="panel-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="panel-body open">
+                        <div class="metrics-row" id="p1-metrics"></div>
+                        <div class="table-wrapper">
+                            <table class="data-table" id="p1-table">
+                                <thead>
+                                    <tr>
+                                        <th>Operation</th>
+                                        <th>FLOPs</th>
+                                        <th>Bytes</th>
+                                        <th>AI (FLOP/B)</th>
+                                        <th>Time</th>
+                                        <th>% Time</th>
+                                        <th>Bound</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="p1-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 2: KV-Cache Passes -->
+                <div class="result-panel" id="panel-p2">
+                    <div class="panel-header" onclick="togglePanel('p2')">
+                        <div class="panel-title">
+                            <span class="phase-badge p2">P2</span>
+                            <h2>KV-Cache + Prefix Sharing Passes</h2>
+                        </div>
+                        <svg class="panel-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="panel-body open">
+                        <div class="p2-comparison" id="p2-comparison"></div>
+                    </div>
+                </div>
+
+                <!-- Phase 3: Fusion + Scheduling + Auto-tuner -->
+                <div class="result-panel" id="panel-p3">
+                    <div class="panel-header" onclick="togglePanel('p3')">
+                        <div class="panel-title">
+                            <span class="phase-badge p3">P3</span>
+                            <h2>Fusion + Scheduling + Auto-Tuner</h2>
+                        </div>
+                        <svg class="panel-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="panel-body open">
+                        <div id="p3-content"></div>
+                    </div>
+                </div>
+
+                <!-- All Candidates -->
+                <div class="result-panel" id="panel-candidates">
+                    <div class="panel-header" onclick="togglePanel('candidates')">
+                        <div class="panel-title">
+                            <span class="phase-badge all">ALL</span>
+                            <h2>Optimization Candidates</h2>
+                        </div>
+                        <svg class="panel-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="panel-body open">
+                        <div class="table-wrapper">
+                            <table class="data-table" id="candidates-table">
+                                <thead>
+                                    <tr>
+                                        <th>Phase</th>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Memory Δ</th>
+                                        <th>Latency Δ</th>
+                                        <th>Risk</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="candidates-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Real-World Application -->
+        <section id="realworld" class="section">
+            <div class="section-header">
+                <h1>Real-World Application</h1>
+                <p class="section-subtitle">How this optimization pipeline connects to actual LLM serving infrastructure.</p>
+            </div>
+
+            <div class="realworld-content">
+                <!-- Architecture Diagram -->
+                <div class="rw-panel">
+                    <h2>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;vertical-align:middle;margin-right:8px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                        Pipeline Architecture — From Model Weights to Deployed Kernel
+                    </h2>
+                    <div class="arch-flow">
+                        <div class="arch-step">
+                            <div class="arch-icon input-icon">①</div>
+                            <div class="arch-label">Model Config</div>
+                            <div class="arch-desc">HuggingFace config.json → architecture hyperparameters (layers, heads, hidden dim, vocab)</div>
+                        </div>
+                        <div class="arch-arrow">→</div>
+                        <div class="arch-step">
+                            <div class="arch-icon ir-icon">②</div>
+                            <div class="arch-label">IR Construction</div>
+                            <div class="arch-desc">Build per-layer operation graph: QKV → Attention → Softmax → OutProj → MLP with FLOPs + bytes</div>
+                        </div>
+                        <div class="arch-arrow">→</div>
+                        <div class="arch-step">
+                            <div class="arch-icon pass-icon">③</div>
+                            <div class="arch-label">Optimization Passes</div>
+                            <div class="arch-desc">KV-cache paging, INT8 quantization, prefix sharing, kernel fusion, decode scheduling, auto-tuning</div>
+                        </div>
+                        <div class="arch-arrow">→</div>
+                        <div class="arch-step">
+                            <div class="arch-icon output-icon">④</div>
+                            <div class="arch-label">Optimized Plan</div>
+                            <div class="arch-desc">Selected optimizations with estimated latency, memory, and accuracy-risk trade-offs</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How to get input from a real machine -->
+                <div class="rw-panel">
+                    <h2>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;vertical-align:middle;margin-right:8px;"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                        How to Get Input from a Real Machine
+                    </h2>
+
+                    <div class="rw-grid">
+                        <div class="rw-item">
+                            <h3>1. Model Architecture (Automatic)</h3>
+                            <p>Every HuggingFace model ships a <code>config.json</code> that contains all architecture hyperparameters. Our pipeline reads these directly:</p>
+                            <pre><code># From HuggingFace Hub or local checkpoint
+from transformers import AutoConfig
+config = AutoConfig.from_pretrained("meta-llama/Llama-2-7b-hf")
+
+# Extract what LLMOpt needs:
+pipeline_input = {
+    "num_layers": config.num_hidden_layers,      # 32
+    "hidden_size": config.hidden_size,            # 4096
+    "num_attention_heads": config.num_attention_heads,  # 32
+    "num_kv_heads": config.num_key_value_heads,   # 32
+    "intermediate_size": config.intermediate_size, # 11008
+    "vocab_size": config.vocab_size,              # 32000
+}</code></pre>
+                        </div>
+
+                        <div class="rw-item">
+                            <h3>2. GPU Hardware (Automatic)</h3>
+                            <p>GPU specifications can be queried at runtime using NVIDIA's management libraries:</p>
+                            <pre><code># Using pynvml (NVIDIA Management Library)
+import pynvml
+pynvml.nvmlInit()
+handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+
+gpu_name = pynvml.nvmlDeviceGetName(handle)      # "NVIDIA A100-SXM4-80GB"
+gpu_mem  = pynvml.nvmlDeviceGetMemoryInfo(handle) # .total = 85899345920
+
+# Or via torch
+import torch
+torch.cuda.get_device_name(0)                     # "NVIDIA A100-SXM4-80GB"
+torch.cuda.get_device_properties(0).total_memory   # 85899345920
+
+# Bandwidth and TFLOP/s come from our datasheet-based preset table,
+# keyed by the device name string above.</code></pre>
+                        </div>
+
+                        <div class="rw-item">
+                            <h3>3. Workload Parameters (User or Profiler)</h3>
+                            <p>Workload parameters come from two sources:</p>
+                            <ul>
+                                <li><strong>Deployment config:</strong> batch size, max context length, precision — set by the serving team</li>
+                                <li><strong>Production traffic:</strong> prompt lengths, generation lengths, prefix sharing patterns — measured from request logs</li>
+                            </ul>
+                            <pre><code># Example: extract prompt-length distribution from logs
+import numpy as np
+prompt_lengths = [len(req.tokens) for req in serving_logs]
+p50, p95 = np.percentile(prompt_lengths, [50, 95])
+# Use p95 as the "sequence_length" for worst-case planning</code></pre>
+                        </div>
+
+                        <div class="rw-item">
+                            <h3>4. Real Prompts for Prefix Sharing</h3>
+                            <p>The prefix-sharing pass uses actual prompt token sequences to build a radix trie and find shared prefixes. Pass real request batches:</p>
+                            <pre><code># Real prompts from your serving system
+pipeline_input["prompts"] = [
+    "You are a helpful assistant. Context: ...",
+    "You are a helpful assistant. Question: ...",
+    "You are a helpful assistant. Summarize: ...",
+]
+# The trie finds "You are a helpful assistant." is shared
+# → KV for those tokens computed once, reused by all 3 requests</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How to use the output -->
+                <div class="rw-panel">
+                    <h2>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;vertical-align:middle;margin-right:8px;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        How to Use the Output
+                    </h2>
+
+                    <div class="rw-grid">
+                        <div class="rw-item">
+                            <h3>1. Integration with Serving Frameworks</h3>
+                            <p>The optimization plan maps directly to features in production LLM serving engines:</p>
+                            <div class="mapping-table">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr><th>LLMOpt Pass</th><th>vLLM</th><th>TensorRT-LLM</th><th>TGI</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>paged_kv</td><td>PagedAttention (default)</td><td>Paged KV Cache</td><td>PagedAttention</td></tr>
+                                        <tr><td>int8_kv</td><td><code>--kv-cache-dtype fp8</code></td><td>INT8 KV Cache plugin</td><td><code>--quantize eetq</code></td></tr>
+                                        <tr><td>prefix_share</td><td>Automatic Prefix Caching</td><td>KV Cache Reuse</td><td>Prefix Caching</td></tr>
+                                        <tr><td>fusion</td><td>FlashAttention (default)</td><td>Fused MHA plugin</td><td>FlashAttention</td></tr>
+                                        <tr><td>split_kv</td><td>Flash-Decoding (automatic)</td><td>Multi-block decode</td><td>Built-in</td></tr>
+                                        <tr><td>autotune</td><td>Triton auto-tune</td><td>TRT builder auto-tune</td><td>N/A</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="rw-item">
+                            <h3>2. Decision Guide</h3>
+                            <p>Use the pipeline output to configure your serving engine:</p>
+                            <pre><code># Example: applying LLMOpt recommendations to vLLM
+# If paged_kv selected → already default in vLLM
+# If int8_kv selected → launch with:
+vllm serve meta-llama/Llama-2-7b-hf \
+  --kv-cache-dtype fp8 \
+  --max-model-len 4096
+
+# If prefix_share selected → enable APC:
+vllm serve meta-llama/Llama-2-7b-hf \
+  --enable-prefix-caching
+
+# If fusion selected → FlashAttention is used by default
+# If split_kv selected → automatic in Flash-Decoding</code></pre>
+                        </div>
+
+                        <div class="rw-item">
+                            <h3>3. Capacity Planning</h3>
+                            <p>The memory analysis tells you exactly how many concurrent requests your GPU can handle:</p>
+                            <ul>
+                                <li><strong>max_batch from P2</strong> → maximum concurrent requests before OOM</li>
+                                <li><strong>TPOT (time per output token)</strong> → per-request latency SLA</li>
+                                <li><strong>Throughput (tok/s)</strong> → aggregate serving capacity</li>
+                                <li><strong>TTFT (time to first token)</strong> → user-perceived latency</li>
+                            </ul>
+                        </div>
+
+                        <div class="rw-item">
+                            <h3>4. What This Pipeline Cannot Do (Theoretical Limits)</h3>
+                            <p>This is an <em>analytical</em> compiler optimization pipeline, not a runtime framework:</p>
+                            <ul>
+                                <li>It does <strong>not execute GPU kernels</strong> — all numbers are roofline estimates at 100% hardware utilization</li>
+                                <li>It does <strong>not modify model weights</strong> — the INT8 KV pass simulates quantization error but doesn't produce quantized checkpoints</li>
+                                <li>It does <strong>not generate CUDA code</strong> — the auto-tuner searches the configuration space analytically; Triton or CUTLASS would implement the actual kernel</li>
+                                <li>Real performance will be <strong>60–85% of roofline</strong> due to cache effects, warp scheduling, memory coalescing, and PCIe overhead</li>
+                            </ul>
+                            <p>To bridge the gap: feed the chosen tile configuration into a Triton kernel template, benchmark it on the target GPU, and compare against the roofline prediction.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Error Toast -->
+    <div class="toast" id="error-toast">
+        <div class="toast-icon">⚠</div>
+        <div class="toast-text" id="toast-text"></div>
+        <button class="toast-close" onclick="closeToast()">×</button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -19,14 +19,25 @@ Explores decode-stage scheduling, work splitting, and execution optimization ins
 
 ## Repository Structure
 
-- `approach-1-kv-cache/` — KV-cache optimization
-- `approach-2-attention-optimization/` — Attention optimization
-- `approach-3-decode-scheduling/` — Decode scheduling
-- `integration/` — Combined compiler pipeline (in progress)
+- `LLMOpt_P1/` — IR construction and roofline analysis
+- `LLMOpt_P2/` — KV-cache passes (INT8 KV, prefix sharing)
+- `LLMOpt_P3/` — Kernel fusion, decode scheduling, auto-tuning
+- `integration/` — Unified pipeline (`pipeline.py`), Flask API (`server.py`) and the LLMOpt Studio frontend (`frontend/`)
 
 ## Setup
 
-Refer to the README and dependency files inside each approach directory for its specific environment and execution instructions.
+```bash
+pip install -r requirements.txt
+python integration/server.py
+```
+
+Then open http://localhost:5000. The Studio re-runs the full P1 → P2 → P3 pipeline on every change; the Deploy tab turns the chosen plan into vLLM / TensorRT-LLM / TGI launch flags. The previous UI is at `/classic.html`.
+
+API endpoints: `POST /api/optimize`, `POST /api/sweep`, `GET /api/presets`, `GET /api/detect` (reads the local NVIDIA GPU via pynvml or nvidia-smi), `GET /api/health`.
+
+## Deployment
+
+`render.yaml` deploys the app to Render: on render.com choose **New → Blueprint** and select this repository. It runs `gunicorn --chdir integration server:app`. (`/api/detect` reports no GPU on a hosted server; pick the target GPU manually.)
 
 ## Evaluation
 
@@ -42,7 +53,7 @@ The project aims to evaluate:
 
 ## Integration
 
-The three approaches are maintained independently while the combined compiler pipeline is developed.
+`integration/pipeline.py` loads the three approaches side by side (each keeps its own module layout) and runs them as one compiler pipeline: P1 builds the IR and roofline estimates, P2 applies KV-cache passes under memory pressure, and P3 evaluates kernel fusion, split-KV / persistent-kernel scheduling and tile auto-tuning. All candidates are merged into one plan.
 
 ## Contributors
 

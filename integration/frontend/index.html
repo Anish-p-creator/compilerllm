@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLMOpt Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="studio.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" class="brand-mark" aria-hidden="true"><path d="M4 16L16 4L28 16L16 28Z" fill="none" stroke="url(#g)" stroke-width="2.5"/><path d="M10 16L16 10L22 16L16 22Z" fill="url(#g)"/><defs><linearGradient id="g" x1="4" y1="4" x2="28" y2="28"><stop stop-color="#818cf8"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs></svg>
+    <span class="brand-name">LLMOpt <em>Studio</em></span>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-view="studio" role="tab">Studio</button>
+    <button class="tab" data-view="deploy" role="tab">Deploy</button>
+    <a class="tab" href="classic.html">Classic</a>
+  </nav>
+  <div class="live-pill" id="live-pill"><span class="dot"></span><span id="live-text">connecting…</span></div>
+</header>
+
+<main>
+<!-- ======================= STUDIO ======================= -->
+<section class="view active" id="view-studio">
+  <aside class="controls" id="controls">
+    <div class="ctl-block">
+      <div class="ctl-title">Scenario</div>
+      <div class="chips" id="scenarios"></div>
+    </div>
+
+    <div class="ctl-block">
+      <div class="ctl-title">Model</div>
+      <div class="seg" data-key="model">
+        <button data-v="llama-7b" class="on">LLaMA-7B<small>MHA · 32 KV heads</small></button>
+        <button data-v="mistral-7b">Mistral-7B<small>GQA · 8 KV heads</small></button>
+      </div>
+    </div>
+
+    <div class="ctl-block">
+      <div class="ctl-title">Target GPU <button class="link-btn" id="detect-btn" title="Read the GPU in this machine">⌁ detect mine</button></div>
+      <div class="gpu-grid" id="gpu-grid"></div>
+      <div class="detect-msg" id="detect-msg"></div>
+    </div>
+
+    <div class="ctl-block">
+      <div class="ctl-title">Precision</div>
+      <div class="seg compact" data-key="precision">
+        <button data-v="fp32">FP32</button><button data-v="fp16" class="on">FP16</button><button data-v="bf16">BF16</button><button data-v="int8">INT8</button><button data-v="int4">INT4</button>
+      </div>
+      <div class="ctl-title mt">Phase</div>
+      <div class="seg compact" data-key="mode">
+        <button data-v="decode" class="on">Decode</button><button data-v="prefill">Prefill</button><button data-v="mixed">Mixed</button>
+      </div>
+    </div>
+
+    <div class="ctl-block">
+      <div class="ctl-title">Workload</div>
+      <div class="slider" data-key="batch_size" data-scale="log2" data-min="0" data-max="9" data-step="1"><label>Batch size</label><output></output><input type="range"></div>
+      <div class="slider" data-key="sequence_length" data-scale="log2" data-min="7" data-max="15" data-step="0.5"><label>Prompt tokens</label><output></output><input type="range"></div>
+      <div class="slider" data-key="generation_length" data-scale="log2" data-min="4" data-max="13" data-step="0.5"><label>Generated tokens</label><output></output><input type="range"></div>
+    </div>
+
+    <div class="ctl-block">
+      <div class="ctl-title">Prompt sharing</div>
+      <div class="slider" data-key="system_prompt_tokens" data-min="0" data-max="4096" data-step="64"><label>Shared system prompt</label><output></output><input type="range"></div>
+      <div class="slider" data-key="fewshot_groups" data-min="0" data-max="8" data-step="1"><label>Few-shot groups</label><output></output><input type="range"></div>
+      <div class="slider" data-key="fewshot_tokens" data-min="0" data-max="4096" data-step="64"><label>Few-shot tokens</label><output></output><input type="range"></div>
+      <div class="slider" data-key="pressure_threshold" data-min="0.1" data-max="1" data-step="0.05" data-fmt="pct"><label>KV pressure trigger</label><output></output><input type="range"></div>
+    </div>
+  </aside>
+
+  <div class="dash">
+    <!-- KPI row -->
+    <div class="kpis" id="kpis">
+      <div class="kpi" data-k="mem"><div class="kpi-l">GPU memory</div><div class="kpi-v"><span class="num">–</span><u>GiB</u></div><div class="kpi-d"></div><div class="kpi-bar"><i></i><b></b></div></div>
+      <div class="kpi" data-k="tpot"><div class="kpi-l">Time / output token</div><div class="kpi-v"><span class="num">–</span><u>ms</u></div><div class="kpi-d"></div></div>
+      <div class="kpi" data-k="tput"><div class="kpi-l">Throughput</div><div class="kpi-v"><span class="num">–</span><u>tok/s</u></div><div class="kpi-d"></div></div>
+      <div class="kpi" data-k="batch"><div class="kpi-l">Max concurrent reqs</div><div class="kpi-v"><span class="num">–</span></div><div class="kpi-d"></div></div>
+      <div class="kpi" data-k="fit"><div class="kpi-l">Fits on GPU</div><div class="kpi-v"><span class="num">–</span></div><div class="kpi-d"></div></div>
+    </div>
+
+    <!-- Pipeline flow -->
+    <div class="panel flow-panel">
+      <div class="panel-h"><h3>Optimization pipeline</h3><span class="muted" id="flow-sub">click any pass for details</span></div>
+      <div class="flow" id="flow">
+        <div class="stage" data-stage="in"><div class="stage-n">INPUT</div><div class="stage-t" id="st-in">—</div></div>
+        <div class="wire"><span></span></div>
+        <div class="stage" data-stage="P1"><div class="stage-n">P1 · IR + Roofline</div><div class="stage-t" id="st-p1">—</div><div class="passes" data-phase="P1"></div></div>
+        <div class="wire"><span></span></div>
+        <div class="stage" data-stage="P2"><div class="stage-n">P2 · KV cache</div><div class="stage-t" id="st-p2">—</div><div class="passes" data-phase="P2"></div></div>
+        <div class="wire"><span></span></div>
+        <div class="stage" data-stage="P3"><div class="stage-n">P3 · Kernels</div><div class="stage-t" id="st-p3">—</div><div class="passes" data-phase="P3"></div></div>
+        <div class="wire"><span></span></div>
+        <div class="stage out" data-stage="out"><div class="stage-n">PLAN</div><div class="stage-t" id="st-out">—</div></div>
+      </div>
+      <div class="pass-detail" id="pass-detail" hidden></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-h"><h3>GPU memory budget</h3><span class="muted" id="mem-sub"></span></div>
+        <div class="membars" id="membars">
+          <div class="mrow" data-r="base"><span class="mlab">Baseline</span><div class="mtrack"><i class="w"></i><i class="kv"></i><div class="cap"></div></div><span class="mval"></span></div>
+          <div class="mrow" data-r="opt"><span class="mlab">Optimized</span><div class="mtrack"><i class="w"></i><i class="kv"></i><div class="cap"></div></div><span class="mval"></span></div>
+        </div>
+        <div class="legend"><span><i class="sw w"></i>weights</span><span><i class="sw kv"></i>KV cache</span><span><i class="sw cap"></i>usable GPU memory</span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h3>Where the time goes</h3><span class="muted">roofline estimate per op</span></div>
+        <div class="chart-box sm"><canvas id="ch-ops"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-h"><h3>Roofline</h3><span class="muted" id="roof-sub"></span></div>
+        <div class="chart-box"><canvas id="ch-roof"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-h">
+          <h3>What-if sweep</h3>
+          <div class="seg mini" id="sweep-param">
+            <button data-v="batch_size" class="on">batch</button><button data-v="sequence_length">prompt</button><button data-v="system_prompt_tokens">shared prefix</button>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="ch-sweep"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="panel">
+        <div class="panel-h"><h3>Kernel fusion levels</h3><span class="muted">Δ ms per step</span></div>
+        <div class="chart-box sm"><canvas id="ch-fusion"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h3>Auto-tuner search</h3><span class="muted" id="tune-sub"></span></div>
+        <div class="chart-box sm"><canvas id="ch-tune"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h3>Decode scheduling</h3></div>
+        <div class="sched" id="sched"></div>
+      </div>
+    </div>
+
+    <div class="grid2 wide-left">
+      <div class="panel">
+        <div class="panel-h"><h3>Candidates</h3>
+          <div class="seg mini" id="cand-filter"><button data-v="all" class="on">all</button><button data-v="P2">P2</button><button data-v="P3">P3</button><button data-v="sel">selected</button></div>
+        </div>
+        <div class="cands" id="cands"></div>
+      </div>
+      <div class="panel term-panel">
+        <div class="panel-h"><h3>Compiler log</h3><span class="muted" id="run-ms"></span></div>
+        <pre class="term" id="term"></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= DEPLOY ======================= -->
+<section class="view" id="view-deploy">
+  <div class="deploy">
+    <div class="deploy-hero">
+      <h1>From plan to production</h1>
+      <p>Your current Studio configuration, turned into serving-engine settings. Change anything in Studio and this page updates.</p>
+      <div class="plan-chips" id="plan-chips"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-h"><h3>Launch command</h3>
+          <div class="seg mini" id="engine"><button data-v="vllm" class="on">vLLM</button><button data-v="trt">TensorRT-LLM</button><button data-v="tgi">TGI</button></div>
+        </div>
+        <div class="code-wrap"><button class="copy" data-copy="cmd">copy</button><pre class="code" id="cmd"></pre></div>
+        <ul class="why" id="cmd-why"></ul>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h3>Capacity plan</h3><span class="muted">for SLA and fleet sizing</span></div>
+        <div class="cap-grid" id="cap-grid"></div>
+        <div class="fleet">
+          <label>Target load <output id="fleet-out"></output></label>
+          <input type="range" id="fleet-rps" min="1" max="200" value="20">
+          <div id="fleet-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><h3>Feeding it a real machine</h3><span class="muted">the three inputs, and where each comes from</span></div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><h4>Model architecture</h4><p>Every Hugging Face checkpoint ships a <code>config.json</code>. Read layers, heads, KV heads, hidden and FFN size straight from it.</p>
+<pre class="code">from transformers import AutoConfig
+c = AutoConfig.from_pretrained("<span id="hf-id">meta-llama/Llama-2-7b-hf</span>")
+cfg = dict(layers=c.num_hidden_layers,
+           heads=c.num_attention_heads,
+           kv_heads=c.num_key_value_heads,
+           hidden=c.hidden_size,
+           ffn=c.intermediate_size)</pre></div>
+        <div class="step"><div class="step-n">2</div><h4>GPU hardware</h4><p>Query the device with NVML and map its name to a datasheet preset (bandwidth, TFLOP/s). The <b>detect mine</b> button in Studio calls <code>/api/detect</code>, which does exactly this.</p>
+<pre class="code">import pynvml
+pynvml.nvmlInit()
+h = pynvml.nvmlDeviceGetHandleByIndex(0)
+name = pynvml.nvmlDeviceGetName(h)
+mem  = pynvml.nvmlDeviceGetMemoryInfo(h).total</pre></div>
+        <div class="step"><div class="step-n">3</div><h4>Workload</h4><p>Batch size and precision come from the deployment config; prompt and output lengths come from request logs (plan for p95, not the mean).</p>
+<pre class="code">import numpy as np
+lens = [len(r.prompt_tokens) for r in logs]
+p95  = int(np.percentile(lens, 95))
+requests.post("http://localhost:5000/api/optimize",
+              json={"sequence_length": p95, ...})</pre></div>
+      </div>
+    </div>
+
+    <div class="panel limits">
+      <div class="panel-h"><h3>What this is — and isn't</h3></div>
+      <div class="lim-grid">
+        <div><b>It is</b> an ahead-of-time planner: an analytical compiler that predicts which optimizations pay off for a model × GPU × workload, before you spend GPU hours.</div>
+        <div><b>It doesn't</b> run kernels or emit CUDA. Numbers are roofline estimates; expect real systems to reach ~60–85% of them.</div>
+        <div><b>Close the loop</b> by benchmarking the recommended config (e.g. the auto-tuner's tile in a Triton template) on the target GPU and feeding measured numbers back.</div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+<script src="studio.js"></script>
+</body>
+</html>
